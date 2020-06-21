@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test19
+  namespace: default
+spec:
+  containers:
+  - image: docker.io/dgeiger/nginx@sha256:e770165fef9e36b990882a4083d8ccf5e29e469a8609bb6b2e3b47d9510e2c8d
+    name: container1
+  - image: docker.io/dgeiger/nginx@sha256:e770165fef9e36b990882a4083d8ccf5e29e469a8609bb6b2e3b47d9510e2c8d
+    name: container2

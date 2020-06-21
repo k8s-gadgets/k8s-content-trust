@@ -1,0 +1,84 @@
+{{ $_ := set . "appName" "opa-deploy" }}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "metadata.name" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+{{ include "metadata.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.opa.deploy.replicaCount }}
+  selector:
+    matchLabels:
+{{- include "metadata.selectorLabels" . | indent 6 }}
+  template:
+    metadata:
+      labels:
+{{- include "metadata.selectorLabels" . | indent 8 }}
+    spec:
+      containers:
+        # WARNING: OPA is NOT running with an authorization policy configured. This
+        # means that clients can read and write policies in OPA. If you are
+        # deploying OPA in an insecure environment, be sure to configure
+        # authentication and authorization on the daemon. See the Security page for
+        # details: https://www.openpolicyagent.org/docs/security.html.
+        - name: opa
+          # image: ubuntu
+          # command: [ "/bin/bash", "-c", "--" ]
+          # args: [ "while true; do sleep 30; done;" ]
+          image: {{ .Values.opa.deploy.image }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          args:
+            - "run"
+            - "--server"
+            - "--tls-cert-file=/certs/tls.crt"
+            - "--tls-private-key-file=/certs/tls.key"
+            - "--addr=0.0.0.0:4443"
+            - "--addr=http://127.0.0.1:8181"
+            - "--log-format=json-pretty"
+            - "--set=decision_logs.console=true"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {}
+            privileged: false
+            # readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1
+          ports:
+          - name: https-opa
+            containerPort: 4443
+          volumeMounts:
+            - readOnly: true
+              mountPath: /certs
+              name: opa-server-certs
+            - readOnly: true
+              mountPath: /etc/certs/notary/
+              name: opa-wrapper-certs
+          readinessProbe:
+            httpGet:
+              path: /health
+              scheme: HTTPS
+              port: 4443
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              scheme: HTTPS
+              port: 4443
+            initialDelaySeconds: 3
+            periodSeconds: 5
+        - name: kube-mgmt
+          image: {{ .Values.kubemgmt.deploy.image }}
+          args:
+            - "--replicate-cluster=v1/namespaces"
+      serviceAccountName: mgmt-sa
+      volumes:
+        - name: opa-server-certs
+          secret:
+            secretName: opa-server-certs
+        - name: opa-wrapper-certs
+          secret:
+            secretName: opa-wrapper-certs

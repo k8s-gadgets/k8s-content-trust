@@ -1,0 +1,9 @@
+apiVersion: v2
+name: notary-wrapper
+version: 0.0.1
+description: notary-wrapper deployment for kubernetes
+type: application
+home: https://github.com/k8s-gadgets/notary-wrapper
+maintainers:
+- name: honeybadger10
+appVersion: 0.0.1

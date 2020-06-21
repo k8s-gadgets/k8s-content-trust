@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: test
+  name: test15
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: test
+  template:
+    metadata:
+      labels:
+        run: test
+    spec:
+      containers:
+      - image: docker.io/dgeiger/alpine:3
+        name: container1
+      - image: docker.io/dgeiger/nginx:1.15
+        name: container2

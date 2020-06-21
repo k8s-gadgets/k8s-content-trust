@@ -1,0 +1,29 @@
+namespace: opa
+imagePullPolicy: Always
+
+
+opa:
+  deploy:
+    image: openpolicyagent/opa:0.21.0
+    replicaCount: 1
+  svc:
+    port: 4443
+    type: ClusterIP
+
+kubemgmt:
+  deploy:
+    image: openpolicyagent/kube-mgmt:0.8
+
+# install validating and mutating or only one
+validating: true
+mutating: true
+
+
+
+# If you want to use a private registry for the images 
+# uncomment and edit the following lines
+# imageCredentials:
+  # name: docker-registry-name
+  # registry: quay.io
+  # username: someone
+  # password: sillyness

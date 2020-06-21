@@ -1,0 +1,20 @@
+{{ $_ := set . "appName" "opa-svc" }}
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ include "metadata.name" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+{{ include "metadata.labels" . | indent 4 }}
+spec:
+  selector:
+{{- include "metadata.selectorLabels" . | indent 4 }}
+  type: {{ .Values.opa.svc.type }}
+  ports:
+  - name: https-opa
+    protocol: TCP
+    targetPort: 4443
+    port: {{ .Values.opa.svc.port }}
+    

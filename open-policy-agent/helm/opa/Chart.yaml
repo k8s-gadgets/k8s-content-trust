@@ -1,0 +1,10 @@
+apiVersion: v2
+name: opa
+version: 0.0.9
+description: openpolicy agent deployment deployment configured for content trust
+type: application
+home: https://github.com/k8s-gadgets/k8s-content-trust
+maintainers:
+- name: honeybadger10
+- name: Igelchen1
+appVersion: 0.21.0

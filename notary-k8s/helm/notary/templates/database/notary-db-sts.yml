@@ -1,0 +1,62 @@
+{{ $_ := set . "appName" "notary-db-sts" }}
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "metadata.name" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+{{ include "metadata.labels" . | indent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+{{- include "metadata.selectorLabels" . | indent 6 }}
+  serviceName: "notary-db"
+  template:
+    metadata:
+      labels:
+{{- include "metadata.selectorLabels" . | indent 8 }}
+    spec:
+      securityContext:
+        fsGroup: 999
+      containers:
+      - name: notary-mariadb
+        image: {{ .Values.notaryDB.sts.image }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {}
+          privileged: false
+          # readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 999
+        # command: [ "/bin/bash", "-c" ]
+        # args: [ "mysqld --user=mysql --innodb_file_per_table" ]
+        # command: [ "/bin/bash", "-c", "--" ]
+        # args: [ "while true; do sleep 30; done;" ]
+        env:
+        - name: TERM
+          value: dumb
+        - name: MYSQL_ALLOW_EMPTY_PASSWORD
+          value: "true"
+        ports:
+        - name: tcp-notary-db
+          containerPort: 3306
+        volumeMounts:
+        - name: notary-db-vol
+          mountPath: /var/lib/mysql
+{{- if .Values.imageCredentials }}
+      imagePullSecrets:
+      - name: {{ .Values.imageCredentials.name }}
+{{- end }}
+  volumeClaimTemplates:
+  - metadata:
+      name: notary-db-vol
+    spec:
+      accessModes: 
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ .Values.notaryDB.sts.volumeSize }}

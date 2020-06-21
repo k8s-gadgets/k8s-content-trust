@@ -1,0 +1,19 @@
+{{- if .Values.validating }}
+{{ $_ := set . "appName" "opa-validating-main-cm" }}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "metadata.name" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+{{ include "metadata.labels" . | indent 4 }}
+  # annotations:
+  #   "helm.sh/hook": pre-install,pre-rollback,pre-upgrade
+  #   "helm.sh/hook-weight": "0"
+  #   "helm.sh/hook-delete-policy": before-hook-creation
+data:
+  config: |
+{{ .Files.Get "policy/validating/main.rego" | indent 4 }}
+{{ end }}

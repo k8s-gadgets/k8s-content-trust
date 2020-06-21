@@ -1,0 +1,7 @@
+apiVersion: v2
+name: notary
+version: 0.0.9
+description: notary deployment for kubernetes
+type: application
+home: https://github.com/theupdateframework/notary
+appVersion: 0.6.1

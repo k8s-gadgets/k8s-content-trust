@@ -1,0 +1,76 @@
+{{ $_ := set . "appName" "notary-wrapper-deploy" }}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "metadata.name" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+{{ include "metadata.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.wrapper.deploy.replicaCount }}
+  selector:
+    matchLabels:
+{{- include "metadata.selectorLabels" . | indent 6 }}
+  template:
+    metadata:
+      labels:
+{{- include "metadata.selectorLabels" . | indent 8 }}
+    spec:
+      securityContext:
+        fsGroup: 10000
+
+      containers:
+      - name: notary-wrapper
+        image: {{ .Values.wrapper.deploy.image }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {}
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 10000
+        command: ["/notary/notary-wrapper"]
+        ports:
+        - name: https-wrapper
+          containerPort: 4445
+        env:
+        - name: "NOTARY_CERT_PATH"
+          value: "/etc/certs/notary"
+        - name: "NOTARY_CLI_PATH"
+          value: "/notary/notary"
+        - name: "NOTARY_ROOT_CA"
+          value: "root-ca.crt"
+        volumeMounts:
+        - name: notary-wrapper-certs
+          readOnly: true
+          mountPath: "/etc/certs/notary"
+        - name: notary-server-root-ca-cert
+          readOnly: true
+          mountPath: "/etc/certs/notary/notary-server-svc"
+        - name: notary-folder
+          readOnly: false
+          mountPath: "/.notary"
+        resources:
+          limits:
+            cpu: 100m 
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+      volumes:
+      - name: notary-wrapper-certs
+        secret:
+          secretName: notary-wrapper-certs
+      - name: notary-server-root-ca-cert
+        secret:
+          secretName: notary-server-root-ca-cert
+      - name: notary-folder
+        emptyDir: {}
+{{- if .Values.imageCredentials }}
+      imagePullSecrets:
+      - name: {{ .Values.imageCredentials.name }}
+{{- end }}
+

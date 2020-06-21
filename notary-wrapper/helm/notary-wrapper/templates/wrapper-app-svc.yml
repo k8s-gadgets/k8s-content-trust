@@ -1,0 +1,19 @@
+{{ $_ := set . "appName" "notary-wrapper-svc" }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "metadata.name" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+{{ include "metadata.labels" . | indent 4 }}
+spec:
+  selector:
+{{- include "metadata.selectorLabels" . | indent 4 }}
+  type: {{ .Values.wrapper.svc.type }}
+  ports:
+  - name: https-wrapper
+    protocol: TCP
+    port: 4445
+    targetPort: {{ .Values.wrapper.svc.targetPort }}

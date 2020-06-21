@@ -1,0 +1,40 @@
+namespace: notary
+imagePullPolicy: Always
+
+signer:
+  deploy:
+    image: dgeiger/notary-signer:master
+    passwordalias1Name: NOTARY_SIGNER_PASSWORDALIAS1
+    passwordalias1Value: mypassword
+    replicaCount: 1
+  cm:
+    passwordalias1Name: passwordalias1
+
+server:
+  deploy:
+    image: dgeiger/notary-server:master
+    replicaCount: 1
+  svc:
+    port: 4443
+    type: ClusterIP
+
+migrate:
+  image: dgeiger/notary-migrate:master
+
+
+notaryDB:
+  sts:
+    image: dgeiger/notary-mariadb:master
+    volumeSize: 8Gi
+  svc:
+    name: notary-db-svc
+    port: 3306
+
+# If you want to use a private registry for the images 
+# uncomment and edit the following lines
+# imageCredentials:
+  # name: docker-registry-name
+  # registry: quay.io
+  # username: someone
+  # password: sillyness
+  

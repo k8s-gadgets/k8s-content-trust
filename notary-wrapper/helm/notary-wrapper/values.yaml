@@ -1,0 +1,22 @@
+namespace: opa
+imagePullPolicy: Always
+
+
+wrapper:
+  deploy:
+    image: dgeiger/notary-wrapper:0.0.1
+    replicaCount: 1
+  svc:
+    targetPort: 4445
+    type: ClusterIP
+
+
+
+# If you want to use a private registry for the images 
+# uncomment and edit the following lines
+# imageCredentials:
+  # name: docker-registry-name
+  # registry: quay.io
+  # username: someone
+  # password: sillyness
+  

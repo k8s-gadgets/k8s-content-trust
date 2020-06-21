@@ -1,0 +1,38 @@
+{{- if .Values.validating }}
+{{ $_ := set . "appName" "opa-validating-webhook" }}
+
+---
+kind: ValidatingWebhookConfiguration
+apiVersion: admissionregistration.k8s.io/v1
+metadata:
+  name: {{ include "metadata.name" . }}
+  labels:
+{{ include "metadata.labels" . | indent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-rollback,post-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation
+webhooks:
+  - name: validating-webhook.openpolicyagent.org
+    namespaceSelector:
+      matchExpressions:
+      - key: openpolicyagent.org/webhook
+        operator: NotIn
+        values:
+        - ignore
+    rules:
+      - operations: ["CREATE", "UPDATE"]
+        apiGroups: ["*"]
+        apiVersions: ["*"]
+        resources: ["*"]
+    clientConfig:
+      caBundle: {{ .Files.Get "certs/opa-ca.crt" | b64enc }}
+      service:
+        namespace: opa
+        name: opa-svc
+        port: 4443
+        path: /v0/data/policy/validating/main
+    sideEffects: None
+    admissionReviewVersions: ["v1", "v1beta1"]
+    failurePolicy: Fail
+{{ end }}

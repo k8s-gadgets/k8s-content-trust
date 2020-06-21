@@ -1,0 +1,89 @@
+{{ $_ := set . "appName" "notary-server-deploy" }}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "metadata.name" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+{{ include "metadata.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.server.deploy.replicaCount }}
+  selector:
+    matchLabels:
+{{- include "metadata.selectorLabels" . | indent 6 }}
+  template:
+    metadata:
+      labels:
+{{- include "metadata.selectorLabels" . | indent 8 }}
+      annotations:
+        checksum/configmap: {{ include (print $.Template.BasePath "/server/server-app-cm.yml") . | sha256sum }}
+    spec:
+      securityContext:
+        fsGroup: 10000
+
+      initContainers:
+      - name: notary-migrate
+        image: {{ .Values.migrate.image }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        command: [ "/bin/sh", "-c" ]
+        args: [ "/etc/notary/migrations/migrate.sh" ]
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {}
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 10000
+        env:
+        - name: SERVICE_NAME
+          value: notary_server
+        - name: MIGRATIONS_PATH
+          value: migrations/server/mysql
+        - name: DB_URL
+          value: {{ template "metadata.database.server.deploy.url" . }}
+
+      containers:
+      - name: notary-server
+        image: {{ .Values.server.deploy.image }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {}
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 10000
+        command: ["/notary/notary-server", "-config=/notary/server-config.json"]
+        ports:
+        - name: https-server
+          containerPort: 4443
+        volumeMounts:
+        - name: server-config-vol
+          mountPath: /notary/server-config.json
+          subPath: server-config.json
+        - name: notary-server-certs
+          readOnly: true
+          mountPath: "/notary/certs"
+        resources:
+          limits:
+            cpu: 100m 
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+      volumes:
+      - name: server-config-vol
+        configMap:
+          name: notary-server-cm
+          items:
+          - key: config
+            path: server-config.json
+      - name: notary-server-certs
+        secret:
+          secretName: notary-server-certs
+{{- if .Values.imageCredentials }}
+      imagePullSecrets:
+      - name: {{ .Values.imageCredentials.name }}
+{{- end }}

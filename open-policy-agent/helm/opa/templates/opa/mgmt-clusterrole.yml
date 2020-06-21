@@ -1,0 +1,16 @@
+{{ $_ := set . "appName" "mgmt-clusterrole" }}
+
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ include "metadata.name" . }}
+  labels:
+{{ include "metadata.labels" . | indent 4 }}
+rules:
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "patch", "update", "watch" ]

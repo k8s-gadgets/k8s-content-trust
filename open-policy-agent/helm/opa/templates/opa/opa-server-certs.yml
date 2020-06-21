@@ -1,0 +1,14 @@
+{{ $_ := set . "appName" "opa-server-certs" }}
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "metadata.name" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+{{ include "metadata.labels" . | indent 4 }}
+type: Opaque
+data:
+  tls.crt: {{ .Files.Get "certs/opa-server.crt" | b64enc }}
+  tls.key: {{ .Files.Get "certs/opa-server.key" | b64enc }}

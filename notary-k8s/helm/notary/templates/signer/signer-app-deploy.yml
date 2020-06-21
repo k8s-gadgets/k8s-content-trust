@@ -1,0 +1,92 @@
+{{ $_ := set . "appName" "notary-signer-deploy" }}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "metadata.name" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+{{ include "metadata.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.signer.deploy.replicaCount }}
+  selector:
+    matchLabels:
+{{- include "metadata.selectorLabels" . | indent 6 }}
+  template:
+    metadata:
+      labels:
+{{- include "metadata.selectorLabels" . | indent 8 }}
+      annotations:
+        checksum/configmap: {{ include (print $.Template.BasePath "/signer/signer-app-cm.yml") . | sha256sum }}
+    spec:
+      securityContext:
+        fsGroup: 10000
+
+      initContainers:
+      - name: notary-migrate
+        image: {{ .Values.migrate.image }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        command: [ "/bin/sh", "-c" ]
+        args: [ "/etc/notary/migrations/migrate.sh" ]
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {}
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 10000
+        env:
+        - name: SERVICE_NAME
+          value: notary_signer
+        - name: MIGRATIONS_PATH
+          value: migrations/signer/mysql
+        - name: DB_URL
+          value: {{ template "metadata.database.signer.deploy.url" . }}
+
+      containers:
+      - name: notary-signer
+        image: {{ .Values.signer.deploy.image }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {}
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 10000
+        command: ["/notary/notary-signer", "-config=/notary/signer-config.json"]
+        ports:
+        - name: grpc-signer
+          containerPort: 7899
+        env:
+        - name: "NOTARY_SIGNER_{{ .Values.signer.cm.passwordalias1Name | upper }}"
+          value: "{{ .Values.signer.deploy.passwordalias1Value }}"
+        volumeMounts:
+        - name: signer-config-vol
+          mountPath: /notary/signer-config.json
+          subPath: signer-config.json
+        - name: notary-signer-certs
+          readOnly: true
+          mountPath: "/notary/certs"
+        resources:
+          limits:
+            cpu: 100m 
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+      volumes:
+      - name: signer-config-vol
+        configMap:
+          name: notary-signer-cm
+          items:
+          - key: config
+            path: signer-config.json
+      - name: notary-signer-certs
+        secret:
+          secretName: notary-signer-certs
+{{- if .Values.imageCredentials }}
+      imagePullSecrets:
+      - name: {{ .Values.imageCredentials.name }}
+{{- end }}
