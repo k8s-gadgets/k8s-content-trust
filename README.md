@@ -6,7 +6,7 @@
 
 This repository provides all components you require to install OPA and Notary on a Kubernetes Cluster. The middle-component Notary-Wrapper allows both CNCF-Solutions to communicate with each other, making it easy for OPA to verify if container images in a deployment request have existing trust data in Notary. 
 
-*** For a detailed guide check out our [Blogpost on Medium](/https://medium.com/@siegert.maximilian/ensure-content-trust-on-kubernetes-using-notary-and-open-policy-agent-485ab3a9423c) *** 
+*** For a detailed guide check out our [Blogpost on Medium](https://medium.com/@siegert.maximilian/ensure-content-trust-on-kubernetes-using-notary-and-open-policy-agent-485ab3a9423c) *** 
 
 
 ## Requirements to reconstruct our installation
